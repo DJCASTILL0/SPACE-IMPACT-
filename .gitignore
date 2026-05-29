@@ -1,0 +1,20 @@
+# Visual Studio
+.vs/
+*.sln
+*.suo
+*.user
+
+# Unreal Engine
+Binaries/
+Intermediate/
+DerivedDataCache/
+Saved/
+Build/
+
+# Archivos de compilación
+*.sln
+*.xcodeproj
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
