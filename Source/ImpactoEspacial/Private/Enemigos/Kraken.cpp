@@ -76,7 +76,7 @@ void AKraken::RecibirDanioEnOjo(UPrimitiveComponent* OverlappedComponent, AActor
                 if (GM)
                 {
                     GM->SumarPuntos(500);
-                    GM->JefeDerrotado();
+                    GM->JefeDerrotado(GetWorld());
                 }
                 Destroy();
             }

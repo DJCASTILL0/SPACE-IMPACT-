@@ -3,6 +3,7 @@
 #include "Enemigos/Dragon.h"
 #include "Enemigos/PezMonstruo.h"
 #include "Enemigos/Kraken.h"
+#include "Engine/Engine.h"
 #include "Nucleo/GameManager.h"
 #include "Components/BillboardComponent.h"
 #include "TimerManager.h"
@@ -65,3 +66,12 @@ void AGeneradorEnemigos::AparecerEnemigo()
     UFabricaEnemigos::GenerarEnemigo(Mundo, TipoAleatorio, UbicacionSpawn);
 }
 
+void AGeneradorEnemigos::ReanudarGeneracion()
+{
+    // Reiniciar el temporizador de spawn
+    GetWorldTimerManager().SetTimer(TemporizadorSpawn, this,
+        &AGeneradorEnemigos::AparecerEnemigo, TiempoEntreEnemigos, true);
+
+    if (GEngine)
+        GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, TEXT("Generador reanudado"));
+}

@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Nucleo/GameManager.h"
+#include "TimerManager.h"
 #include "Engine/World.h"
 #include "Engine/Engine.h"
 
@@ -115,7 +116,7 @@ void UGameManager::EstablecerEnemigosEnOleada(int32 Cantidad)
     EnemigosRestantesEnOleada = Cantidad;
 }
 
-void UGameManager::JefeDerrotado()
+void UGameManager::JefeDerrotado(UWorld* Mundo)
 {
     bJefeDerrotado = true;
 
@@ -128,8 +129,15 @@ void UGameManager::JefeDerrotado()
         if (GEngine)
             GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green,
                 FString::Printf(TEXT("¡Nivel %d completado!"), OleadaActual));
+
+        // Pasar al siguiente nivel después de 3 segundos
+        FTimerHandle TimerSiguienteNivel;
+        Mundo->GetTimerManager().SetTimer(TimerSiguienteNivel, this,
+            &UGameManager::IniciarSiguienteNivel, 3.0f, false);
     }
 }
+
+
 
 void UGameManager::ResetearJuego()
 {

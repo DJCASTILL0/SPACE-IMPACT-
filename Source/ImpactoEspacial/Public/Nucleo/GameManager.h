@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
+
 #include "GameManager.generated.h"
 
 UENUM()
@@ -40,7 +41,6 @@ public:
     void ReanudarJuego();
     void GameOver();
     void VictoriaJuego();
-
     EEstadoJuego ObtenerEstado() const { return EstadoActual; }
 
     void SumarPuntos(int32 Cantidad);
@@ -58,7 +58,7 @@ public:
 
     UFUNCTION()
     bool EsMomentoDelJefe() const { return EnemigosRestantesEnOleada <= 0 && !bJefeDerrotado; }
-    void JefeDerrotado();
+    void JefeDerrotado(UWorld* Mundo);
     bool ObtenerJefeDerrotado() const { return bJefeDerrotado; }
 
     void ResetearJuego();

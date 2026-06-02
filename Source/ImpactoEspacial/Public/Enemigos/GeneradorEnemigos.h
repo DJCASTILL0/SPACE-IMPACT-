@@ -11,12 +11,14 @@ class IMPACTOESPACIAL_API AGeneradorEnemigos : public AActor
 
 public:
 	AGeneradorEnemigos();
+	void ReanudarGeneracion();
 
 protected:
 	virtual void BeginPlay() override;
 
 	// Función que se llamará repetidamente
 	void AparecerEnemigo();
+
 
 	FTimerHandle TemporizadorSpawn;
 	float TiempoEntreEnemigos;

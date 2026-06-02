@@ -77,6 +77,7 @@ void ANaveJugador::BeginPlay()
 	if (GM && GM->ObtenerEstado() == EEstadoJuego::MenuPrincipal)
 	{
 		GM->IniciarJuego();
+		GM->EstablecerNivel(1);  // Empezar en nivel 1
 	}
 	Super::BeginPlay();
 	VidaActual = VidaMaxima;
@@ -246,7 +247,8 @@ float ANaveJugador::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 		{
 			// REAPARECER (Respawn temporal)
 			VidaActual = VidaMaxima;
-			SetActorLocation(FVector(0.0f, 0.0f, 0.0f)); // Volvemos al centro
+			// Reaparecer en el borde izquierdo de la pantalla (donde empieza el jugador)
+			SetActorLocation(FVector(-500.0f, 0.0f, 0.0f));
 
 			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Nave destruida. Vidas restantes: %d"), VidasTotales));
 		}
