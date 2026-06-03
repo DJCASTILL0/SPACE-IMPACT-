@@ -7,7 +7,7 @@
 
 APezMonstruo::APezMonstruo()
 {
-    Vida = 1500.f;
+    Vida = 400.f;
     Velocidad = 600.f; // 1.5x
     TiempoEntreDisparos = 0.57f; // 1.75x ratio
     bEstaEmbestiendo = false;
@@ -48,6 +48,10 @@ void APezMonstruo::Tick(float DeltaTime)
 
 void APezMonstruo::Disparar()
 {
+   /*
+    UWorld* Mundo = GetWorld();
+    if (!Mundo) return; // Protección
+
     FVector Ubicacion = GetActorLocation();
 
     FActorSpawnParameters Params;
@@ -66,6 +70,7 @@ void APezMonstruo::Disparar()
     FVector Salida3 = Ubicacion + FVector(-150.f, 0.f, -100.f);
     AProyectilBase* Proy3 = GetWorld()->SpawnActor<AProyectilBase>(AProyectilBase::StaticClass(), Salida3, FRotator::ZeroRotator, Params);
     if (Proy3) { Proy3->EstablecerTiempoVida(5.0f); Proy3->ActivarProyectil(Salida3, FRotator(200.f, 0.f, 0.f)); }
+   */
 }
 
 void APezMonstruo::Embestir()

@@ -63,30 +63,18 @@ float AEnemigoBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 		{
 			GM->SumarPuntos(100);
 			GM->EnemigoEliminado();
-			// Si el enemigo era un jefe, notificar al GameManager
-			if (this->IsA(AJefeBase::StaticClass()))
-			{
-				GM->JefeDerrotado(GetWorld());  // Pasar el mundo
 
-				// Buscar el generador y reanudarlo cuando empiece el siguiente nivel
-				TArray<AActor*> Generadores;
-				UGameplayStatics::GetAllActorsOfClass(GetWorld(), AGeneradorEnemigos::StaticClass(), Generadores);
-				if (Generadores.Num() > 0)
-				{
-					AGeneradorEnemigos* Gen = Cast<AGeneradorEnemigos>(Generadores[0]);
-					if (Gen)
-					{
-						// Reanudar después de 4 segundos (dar tiempo al mensaje)
-						FTimerHandle TimerReanudar;
-						GetWorld()->GetTimerManager().SetTimer(TimerReanudar, Gen,
-							&AGeneradorEnemigos::ReanudarGeneracion, 4.0f, false);
-					}
-				}
-			}
-			// Si era un jefe, avisar al GameManager
 			if (this->IsA(AJefeBase::StaticClass()))
 			{
-				GM->JefeDerrotado(GetWorld());
+				if (GM->ObtenerNivelActual() >= 3)
+				{
+					if (MiNave) MiNave->MostrarVictoria();
+				}
+				else
+				{
+					GM->JefeDerrotado(GetWorld());
+					// No reanudar aquí, lo hará IniciarSiguienteNivel
+				}
 			}
 		}
 
@@ -95,6 +83,7 @@ float AEnemigoBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 
 	return DanioRecibido;
 }
+
 
 void AEnemigoBase::AlChocar(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {

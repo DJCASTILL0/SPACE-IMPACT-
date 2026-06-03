@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
-
 #include "GameManager.generated.h"
 
 UENUM()
@@ -25,6 +24,9 @@ class IMPACTOESPACIAL_API UGameManager : public UObject
 private:
     static UGameManager* Instancia;
 
+    UPROPERTY()
+    UWorld* MundoActual;
+
     EEstadoJuego EstadoActual;
     int32 PuntuacionTotal;
     int32 OleadaActual;
@@ -35,7 +37,7 @@ private:
 
 public:
     static UGameManager* ObtenerInstancia(UWorld* Mundo);
-
+    void CargarNivel(FName NombreNivel);
     void IniciarJuego();
     void PausarJuego();
     void ReanudarJuego();
@@ -51,7 +53,7 @@ public:
     void EstablecerEnemigosEnOleada(int32 Cantidad);
     int32 ObtenerOleadaActual() const { return OleadaActual; }
     int32 ObtenerEnemigosRestantes() const { return EnemigosRestantesEnOleada; }
-    // --- NIVELES ---
+
     int32 ObtenerNivelActual() const { return OleadaActual; }
     void EstablecerNivel(int32 NuevoNivel);
     void IniciarSiguienteNivel();
@@ -62,4 +64,5 @@ public:
     bool ObtenerJefeDerrotado() const { return bJefeDerrotado; }
 
     void ResetearJuego();
+
 };

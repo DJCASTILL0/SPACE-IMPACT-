@@ -1,5 +1,3 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -19,12 +17,4 @@ protected:
 
 public:
     virtual void Disparar() override;
-
-    UFUNCTION()
-    void RecibirDanioEnOjo(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-private:
-    // Ojo del Kraken (punto débil)
-    UPROPERTY()
-    class USphereComponent* OjoColision;
 };

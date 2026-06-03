@@ -7,7 +7,7 @@
 
 ADragon::ADragon()
 {
-    Vida = 1500.f;
+    Vida = 500.f;
     Velocidad = 400.f; // 1x
     TiempoEntreDisparos = 2.57f; // 1.75x ratio de disparo
 }
@@ -19,6 +19,9 @@ void ADragon::BeginPlay()
 
 void ADragon::Disparar()
 {
+    UWorld* Mundo = GetWorld();
+    if (!Mundo) return; // Protección
+
     FVector Ubicacion = GetActorLocation();
 
     FActorSpawnParameters Params;

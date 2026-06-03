@@ -3,9 +3,15 @@
 #include "Nucleo/GameManager.h"
 #include "TimerManager.h"
 #include "Engine/World.h"
+#include "Blueprint/UserWidget.h"
+#include "Nucleo/ImpactoEspacialGameModeBase.h"
+#include "GameFramework/PlayerController.h"
+#include "Nucleo/SpaceImpactGameInstance.h"
+#include "Kismet/GameplayStatics.h"
+#include "Enemigos/GeneradorEnemigos.h"
+#include "Jugador/NaveJugador.h"
 #include "Engine/Engine.h"
 
-// Inicializar la instancia estática a nullptr
 UGameManager* UGameManager::Instancia = nullptr;
 
 UGameManager::UGameManager()
@@ -15,6 +21,7 @@ UGameManager::UGameManager()
     OleadaActual = 0;
     EnemigosRestantesEnOleada = 0;
     bJefeDerrotado = false;
+    MundoActual = nullptr;
 }
 
 UGameManager* UGameManager::ObtenerInstancia(UWorld* Mundo)
@@ -22,8 +29,7 @@ UGameManager* UGameManager::ObtenerInstancia(UWorld* Mundo)
     if (!Instancia)
     {
         Instancia = NewObject<UGameManager>(Mundo);
-        // NO llamar a AddToRoot()
-        // Instancia->AddToRoot(); // ? QUITAR ESTO
+        Instancia->MundoActual = Mundo;
     }
     return Instancia;
 }
@@ -56,30 +62,38 @@ void UGameManager::ReanudarJuego()
     if (EstadoActual == EEstadoJuego::Pausado)
     {
         EstadoActual = EEstadoJuego::Jugando;
-       
     }
 }
 
 void UGameManager::GameOver()
 {
+    if (EstadoActual == EEstadoJuego::GameOver) return;
     EstadoActual = EEstadoJuego::GameOver;
-    if (GEngine)
+
+    // Buscar el GameMode para obtener las clases de Widgets
+    AImpactoEspacialGameModeBase* GM = Cast<AImpactoEspacialGameModeBase>(
+        UGameplayStatics::GetGameMode(MundoActual));
+
+    if (GM && GM->ClaseGameOver && MundoActual)
     {
-        GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("¡GAME OVER!"));
-        GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red,
-            FString::Printf(TEXT("Puntuación final: %d"), PuntuacionTotal));
+        UUserWidget* WidgetGO = CreateWidget<UUserWidget>(MundoActual, GM->ClaseGameOver);
+        if (WidgetGO)
+        {
+            WidgetGO->AddToViewport(100);
+            APlayerController* PC = MundoActual->GetFirstPlayerController();
+            if (PC)
+            {
+                PC->bShowMouseCursor = true;
+                PC->SetInputMode(FInputModeUIOnly());
+            }
+        }
     }
 }
 
+
 void UGameManager::VictoriaJuego()
 {
-    EstadoActual = EEstadoJuego::Victoria;
-    if (GEngine)
-    {
-        GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("¡VICTORIA! ¡JEFE DERROTADO!"));
-        GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green,
-            FString::Printf(TEXT("Puntuación final: %d"), PuntuacionTotal));
-    }
+    // Ya no se usa, la victoria se muestra desde EnemigoBase
 }
 
 void UGameManager::SumarPuntos(int32 Cantidad)
@@ -90,7 +104,7 @@ void UGameManager::SumarPuntos(int32 Cantidad)
 void UGameManager::IniciarNuevaOleada()
 {
     OleadaActual++;
-    EnemigosRestantesEnOleada = 5 + (OleadaActual * 3); // Cada oleada tiene más enemigos
+    EnemigosRestantesEnOleada = 5 + (OleadaActual * 3);
 
     if (GEngine)
         GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Cyan,
@@ -119,25 +133,8 @@ void UGameManager::EstablecerEnemigosEnOleada(int32 Cantidad)
 void UGameManager::JefeDerrotado(UWorld* Mundo)
 {
     bJefeDerrotado = true;
-
-    if (OleadaActual >= 3)
-    {
-        VictoriaJuego();
-    }
-    else
-    {
-        if (GEngine)
-            GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green,
-                FString::Printf(TEXT("¡Nivel %d completado!"), OleadaActual));
-
-        // Pasar al siguiente nivel después de 3 segundos
-        FTimerHandle TimerSiguienteNivel;
-        Mundo->GetTimerManager().SetTimer(TimerSiguienteNivel, this,
-            &UGameManager::IniciarSiguienteNivel, 3.0f, false);
-    }
+    IniciarSiguienteNivel();
 }
-
-
 
 void UGameManager::ResetearJuego()
 {
@@ -152,8 +149,8 @@ void UGameManager::EstablecerNivel(int32 NuevoNivel)
 {
     OleadaActual = NuevoNivel;
     bJefeDerrotado = false;
-    EnemigosRestantesEnOleada = 10; // 10 enemigos por nivel
-
+    EnemigosRestantesEnOleada = 10;
+    EstadoActual = EEstadoJuego::Jugando;
     if (GEngine)
         GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan,
             FString::Printf(TEXT("NIVEL %d"), OleadaActual));
@@ -168,4 +165,25 @@ void UGameManager::IniciarSiguienteNivel()
     if (GEngine)
         GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan,
             FString::Printf(TEXT("NIVEL %d"), OleadaActual));
+
+    // Reanudar generador
+    TArray<AActor*> Generadores;
+    UGameplayStatics::GetAllActorsOfClass(MundoActual, AGeneradorEnemigos::StaticClass(), Generadores);
+    if (Generadores.Num() > 0)
+    {
+        AGeneradorEnemigos* Gen = Cast<AGeneradorEnemigos>(Generadores[0]);
+        if (Gen) Gen->ReanudarGeneracion();
+    }
+}
+void UGameManager::CargarNivel(FName NombreNivel)
+{
+    if (!MundoActual) return;
+
+    USpaceImpactGameInstance* GI = Cast<USpaceImpactGameInstance>(MundoActual->GetGameInstance());
+    if (GI)
+    {
+        GI->GuardarPuntuacion(PuntuacionTotal, OleadaActual);
+    }
+
+    UGameplayStatics::OpenLevel(MundoActual, NombreNivel);
 }

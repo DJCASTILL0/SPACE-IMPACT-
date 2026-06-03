@@ -11,7 +11,7 @@
 AGeneradorEnemigos::AGeneradorEnemigos()
 {
 	PrimaryActorTick.bCanEverTick = false;
-	TiempoEntreEnemigos = 2.0f; // Aparece un enemigo cada 2 segundos
+	TiempoEntreEnemigos = 1.0f; // Aparece un enemigo cada 2 segundos
 	// Esto crea un icono de "Sprite" que verás en el editor para poder pincharlo y moverlo
 	UBillboardComponent* IconoEditor = CreateDefaultSubobject<UBillboardComponent>(TEXT("IconoEditor"));
 	RootComponent = IconoEditor;
@@ -19,10 +19,10 @@ AGeneradorEnemigos::AGeneradorEnemigos()
 
 void AGeneradorEnemigos::BeginPlay()
 {
-	Super::BeginPlay();
+    Super::BeginPlay();
 
-	// Iniciamos el ciclo de aparición
-	GetWorldTimerManager().SetTimer(TemporizadorSpawn, this, &AGeneradorEnemigos::AparecerEnemigo, TiempoEntreEnemigos, true);
+    // COMENTAR ESTO para que no empiece solo:
+    // GetWorldTimerManager().SetTimer(TemporizadorSpawn, this, &AGeneradorEnemigos::AparecerEnemigo, TiempoEntreEnemigos, true);
 }
 
 void AGeneradorEnemigos::AparecerEnemigo()
@@ -32,7 +32,12 @@ void AGeneradorEnemigos::AparecerEnemigo()
 
     UGameManager* GM = UGameManager::ObtenerInstancia(Mundo);
     if (!GM) return;
-
+    // DEBUG
+    if (GEngine)
+        GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Yellow,
+            FString::Printf(TEXT("Enemigos restantes: %d, JefeDerrotado: %s"),
+                GM->ObtenerEnemigosRestantes(),
+                GM->ObtenerJefeDerrotado() ? TEXT("SI") : TEXT("NO")));
     // Si ya no quedan enemigos, spawnear jefe según nivel
     if (GM->EsMomentoDelJefe())
     {

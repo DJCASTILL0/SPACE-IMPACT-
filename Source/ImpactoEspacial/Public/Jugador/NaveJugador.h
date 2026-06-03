@@ -99,5 +99,13 @@ public:
 	// Getters puros
 	FORCEINLINE class USphereComponent* GetComponenteColision() const { return ComponenteColision; }
 	FORCEINLINE class UCameraComponent* GetCamaraLateral() const { return CamaraLateral; }
+public:
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<class UUserWidget> ClaseGameOver;
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<class UUserWidget> ClaseVictoria;
 	// --- HABILIDADES ESPECIALES ---
+public:
+	void MostrarVictoria();
 };
