@@ -7,9 +7,17 @@
 
 ADragon::ADragon()
 {
-    Vida = 500.f;
-    Velocidad = 400.f; // 1x
-    TiempoEntreDisparos = 2.57f; // 1.75x ratio de disparo
+    Vida = 1500.f;
+    Velocidad = 400.f;
+    TiempoEntreDisparos = 0.57f;
+    SetActorScale3D(FVector(2.5f, 2.5f, 2.5f));
+
+ 
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> MeshDragon(TEXT("/Game/Jugador/basura/King_Boo.King_Boo"));
+    if (MeshDragon.Succeeded())
+    {
+        MallaEnemigo->SetStaticMesh(MeshDragon.Object);
+    }
 }
 
 void ADragon::BeginPlay()
@@ -29,7 +37,7 @@ void ADragon::Disparar()
     Params.Owner = this;
 
     // Disparo recto (izquierda)
-    FVector Salida1 = Ubicacion + FVector(-150.f, 0.f, 0.f);
+    FVector Salida1 = Ubicacion + FVector(-250.f, 0.f, 0.f);
     AProyectilBase* Proy1 = GetWorld()->SpawnActor<AProyectilBase>(AProyectilBase::StaticClass(), Salida1, FRotator::ZeroRotator, Params);
     if (Proy1)
     {
@@ -38,7 +46,7 @@ void ADragon::Disparar()
     }
 
     // Disparo arriba-izquierda (spawneo más arriba)
-    FVector Salida2 = Ubicacion + FVector(-150.f, 0.f, 100.f);
+    FVector Salida2 = Ubicacion + FVector(-250.f, 0.f, 100.f);
     AProyectilBase* Proy2 = GetWorld()->SpawnActor<AProyectilBase>(AProyectilBase::StaticClass(), Salida2, FRotator::ZeroRotator, Params);
     if (Proy2)
     {
@@ -47,7 +55,7 @@ void ADragon::Disparar()
     }
 
     // Disparo abajo-izquierda (spawneo más abajo)
-    FVector Salida3 = Ubicacion + FVector(-150.f, 0.f, -100.f);
+    FVector Salida3 = Ubicacion + FVector(-250.f, 0.f, -100.f);
     AProyectilBase* Proy3 = GetWorld()->SpawnActor<AProyectilBase>(AProyectilBase::StaticClass(), Salida3, FRotator::ZeroRotator, Params);
     if (Proy3)
     {

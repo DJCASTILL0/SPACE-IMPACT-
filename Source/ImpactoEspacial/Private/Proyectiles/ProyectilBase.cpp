@@ -94,21 +94,7 @@ void AProyectilBase::DesactivarProyectil()
 	SetActorLocation(FVector(-10000.f, -10000.f, -10000.f));
 }
 
-// ... (La función AlImpactar se queda igual, ya que ella llama a DesactivarProyectil)
 
-/*void AProyectilBase::AlImpactar(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
-{
-	if (GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red,
-			FString::Printf(TEXT("IMPACTO con: %s"), *OtherActor->GetName()));
-	if ((OtherActor != nullptr) && (OtherActor != this))
-	{
-		// Aplicar daño a lo que sea (jugador o enemigo)
-		UGameplayStatics::ApplyDamage(OtherActor, CantidadDano, GetInstigatorController(), this, UDamageType::StaticClass());
-
-		DesactivarProyectil();
-	}
-}*/
 
 void AProyectilBase::AlSuperponer(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {

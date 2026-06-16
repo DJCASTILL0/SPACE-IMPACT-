@@ -3,6 +3,18 @@
 #include "UI/PantallaHUD.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
+#include "Jugador/NaveJugador.h"
+
+void UPantallaHUD::Observar(ANaveJugador* Nave)
+{
+	if (!Nave) return;
+
+	// SUSCRIPCIï¿½N del patrï¿½n Observer: el HUD se engancha a los eventos de la
+	// nave. Cuando la nave haga Broadcast, estas funciones se llaman solas.
+	Nave->OnSaludCambiada.AddDynamic(this, &UPantallaHUD::ActualizarSalud);
+	Nave->OnVidasCambiadas.AddDynamic(this, &UPantallaHUD::ActualizarVidas);
+	Nave->OnPuntosCambiados.AddDynamic(this, &UPantallaHUD::ActualizarPuntos);
+}
 
 void UPantallaHUD::ActualizarSalud(float SaludActual, float SaludMaxima)
 {
@@ -17,7 +29,7 @@ void UPantallaHUD::ActualizarVidas(int32 Vidas)
 {
 	if (TextoVidas)
 	{
-		// Convertimos el número entero a un Texto que Unreal pueda dibujar
+		// Convertimos el nï¿½mero entero a un Texto que Unreal pueda dibujar
 		TextoVidas->SetText(FText::FromString(FString::Printf(TEXT("Vidas : %d"), Vidas)));
 	}
 }

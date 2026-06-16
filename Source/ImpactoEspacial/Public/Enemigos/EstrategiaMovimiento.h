@@ -10,6 +10,9 @@ class IMPACTOESPACIAL_API UEstrategiaMovimiento : public UObject
 	GENERATED_BODY()
 
 public:
-	// Función pura que cada estrategia implementará (Línea recta, zigzag, etc.)
-	virtual FVector CalcularNuevaPosicion(FVector PosicionActual, float DeltaTime, float Velocidad) { return PosicionActual; }
+	// Mï¿½todo ABSTRACTO del patrï¿½n Strategy: es un contrato puro, sin cuerpo por
+	// defecto. Cada estrategia concreta (Lineal, ZigZag, Diagonal, Perseguidor)
+	// estï¿½ OBLIGADA a implementarlo. Asï¿½ la base es una verdadera interfaz.
+	virtual FVector CalcularNuevaPosicion(FVector PosicionActual, float DeltaTime, float Velocidad)
+		PURE_VIRTUAL(UEstrategiaMovimiento::CalcularNuevaPosicion, return PosicionActual;);
 };

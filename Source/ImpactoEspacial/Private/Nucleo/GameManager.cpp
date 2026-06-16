@@ -12,8 +12,6 @@
 #include "Jugador/NaveJugador.h"
 #include "Engine/Engine.h"
 
-UGameManager* UGameManager::Instancia = nullptr;
-
 UGameManager::UGameManager()
 {
     EstadoActual = EEstadoJuego::MenuPrincipal;
@@ -26,14 +24,26 @@ UGameManager::UGameManager()
 
 UGameManager* UGameManager::ObtenerInstancia(UWorld* Mundo)
 {
-    if (!Instancia)
+    if (!Mundo) return nullptr;
+
+    // Guardamos el GameManager en el GameInstance (no en un puntero estï¿½tico).
+    // El GameInstance sobrevive entre niveles y estï¿½ protegido del recolector de
+    // basura, asï¿½ que nunca devolvemos un puntero a memoria liberada (la causa
+    // del crash al volver a jugar tras un cambio de nivel).
+    USpaceImpactGameInstance* GI = Cast<USpaceImpactGameInstance>(Mundo->GetGameInstance());
+    if (!GI) return nullptr;
+
+    // Recreamos si: no existe, fue invalidado, o pertenece a un World anterior
+    // (MundoActual es UPROPERTY, el GC lo pone a null al destruirse el nivel).
+    if (!IsValid(GI->GameManagerActivo) || GI->GameManagerActivo->MundoActual != Mundo)
     {
-        Instancia = NewObject<UGameManager>(Mundo);
-        Instancia->MundoActual = Mundo;
+        GI->GameManagerActivo = NewObject<UGameManager>(GI);
+        GI->GameManagerActivo->MundoActual = Mundo;
     }
-    return Instancia;
+    return GI->GameManagerActivo;
 }
 
+// Arranca una partida: deja todo a cero y lanza la primera oleada.
 void UGameManager::IniciarJuego()
 {
     EstadoActual = EEstadoJuego::Jugando;
@@ -42,7 +52,7 @@ void UGameManager::IniciarJuego()
     bJefeDerrotado = false;
 
     if (GEngine)
-        GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, TEXT("¡JUEGO INICIADO!"));
+        GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, TEXT("ï¿½JUEGO INICIADO!"));
 
     IniciarNuevaOleada();
 }
@@ -65,6 +75,7 @@ void UGameManager::ReanudarJuego()
     }
 }
 
+// Pasa a estado GameOver y muestra el widget de Game Over (una sola vez).
 void UGameManager::GameOver()
 {
     if (EstadoActual == EEstadoJuego::GameOver) return;
@@ -96,11 +107,13 @@ void UGameManager::VictoriaJuego()
     // Ya no se usa, la victoria se muestra desde EnemigoBase
 }
 
+// Suma puntos al marcador global.
 void UGameManager::SumarPuntos(int32 Cantidad)
 {
     PuntuacionTotal += Cantidad;
 }
 
+// Sube de oleada y calcula cuÃ¡ntos enemigos tendrÃ¡ (crece con la oleada).
 void UGameManager::IniciarNuevaOleada()
 {
     OleadaActual++;
@@ -108,9 +121,10 @@ void UGameManager::IniciarNuevaOleada()
 
     if (GEngine)
         GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Cyan,
-            FString::Printf(TEXT("¡Oleada %d! Enemigos: %d"), OleadaActual, EnemigosRestantesEnOleada));
+            FString::Printf(TEXT("ï¿½Oleada %d! Enemigos: %d"), OleadaActual, EnemigosRestantesEnOleada));
 }
 
+// Resta 1 a los enemigos que faltan; al llegar a 0 toca el jefe.
 void UGameManager::EnemigoEliminado()
 {
     if (EnemigosRestantesEnOleada > 0)
@@ -120,7 +134,7 @@ void UGameManager::EnemigoEliminado()
         if (EnemigosRestantesEnOleada <= 0)
         {
             if (GEngine)
-                GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, TEXT("¡Oleada completada!"));
+                GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, TEXT("ï¿½Oleada completada!"));
         }
     }
 }
@@ -130,12 +144,14 @@ void UGameManager::EstablecerEnemigosEnOleada(int32 Cantidad)
     EnemigosRestantesEnOleada = Cantidad;
 }
 
+// Marca el jefe como vencido y avanza al siguiente nivel.
 void UGameManager::JefeDerrotado(UWorld* Mundo)
 {
     bJefeDerrotado = true;
     IniciarSiguienteNivel();
 }
 
+// Deja todos los contadores a cero (al empezar una partida nueva).
 void UGameManager::ResetearJuego()
 {
     PuntuacionTotal = 0;
@@ -145,17 +161,19 @@ void UGameManager::ResetearJuego()
     EstadoActual = EEstadoJuego::MenuPrincipal;
 }
 
+// Fija directamente el nivel (lo usa la nave al empezar en el nivel 1).
 void UGameManager::EstablecerNivel(int32 NuevoNivel)
 {
     OleadaActual = NuevoNivel;
     bJefeDerrotado = false;
-    EnemigosRestantesEnOleada = 10;
+    EnemigosRestantesEnOleada = 10;  
     EstadoActual = EEstadoJuego::Jugando;
     if (GEngine)
         GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan,
             FString::Printf(TEXT("NIVEL %d"), OleadaActual));
 }
 
+// Sube un nivel, reinicia el conteo y reactiva el generador de enemigos.
 void UGameManager::IniciarSiguienteNivel()
 {
     OleadaActual++;
@@ -175,6 +193,7 @@ void UGameManager::IniciarSiguienteNivel()
         if (Gen) Gen->ReanudarGeneracion();
     }
 }
+// Guarda la puntuaciÃ³n en el GameInstance y abre otro mapa.
 void UGameManager::CargarNivel(FName NombreNivel)
 {
     if (!MundoActual) return;

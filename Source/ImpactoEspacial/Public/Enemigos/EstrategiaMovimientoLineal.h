@@ -4,12 +4,13 @@
 #include "Enemigos/EstrategiaMovimiento.h"
 #include "EstrategiaMovimientoLineal.generated.h"
 
+// STRATEGY concreta: movimiento en L√çNEA RECTA hacia la izquierda.
 UCLASS()
 class IMPACTOESPACIAL_API UEstrategiaMovimientoLineal : public UEstrategiaMovimiento
 {
 	GENERATED_BODY()
 
 public:
-	// Sobrescribimos la funciÛn para que se mueva en lÌnea recta a la izquierda
+	// Sobrescribimos la funciÔøΩn para que se mueva en lÔøΩnea recta a la izquierda
 	virtual FVector CalcularNuevaPosicion(FVector PosicionActual, float DeltaTime, float Velocidad) override;
 };

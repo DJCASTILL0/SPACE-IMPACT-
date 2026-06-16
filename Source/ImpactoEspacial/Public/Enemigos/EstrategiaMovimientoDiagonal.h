@@ -6,6 +6,7 @@
 #include "Enemigos/EstrategiaMovimiento.h"
 #include "EstrategiaMovimientoDiagonal.generated.h"
 
+// STRATEGY concreta: se mueve en DIAGONAL (a la izquierda y hacia abajo).
 UCLASS()
 class IMPACTOESPACIAL_API UEstrategiaMovimientoDiagonal : public UEstrategiaMovimiento
 {

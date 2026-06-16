@@ -4,6 +4,11 @@
 #include "GameFramework/Actor.h"
 #include "GeneradorEnemigos.generated.h"
 
+// ============================================================================
+//  GeneradorEnemigos
+//  Actor que colocas en el nivel. Con un temporizador va "soltando" enemigos
+//  (pidiï¿½ndoselos a la Fï¿½brica) y, cuando ya no quedan, suelta al jefe.
+// ============================================================================
 UCLASS()
 class IMPACTOESPACIAL_API AGeneradorEnemigos : public AActor
 {
@@ -11,15 +16,15 @@ class IMPACTOESPACIAL_API AGeneradorEnemigos : public AActor
 
 public:
 	AGeneradorEnemigos();
-	void ReanudarGeneracion();
+	void ReanudarGeneracion();   // Vuelve a activar el temporizador de spawn
 
 protected:
 	virtual void BeginPlay() override;
 
-	// Función que se llamará repetidamente
+	// Funciï¿½n que se llama repetidamente por el temporizador: crea un enemigo o el jefe.
 	void AparecerEnemigo();
 
 
-	FTimerHandle TemporizadorSpawn;
-	float TiempoEntreEnemigos;
+	FTimerHandle TemporizadorSpawn; // Temporizador que llama a AparecerEnemigo
+	float TiempoEntreEnemigos;      // Segundos entre cada apariciï¿½n
 };

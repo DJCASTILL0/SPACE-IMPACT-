@@ -6,12 +6,13 @@
 #include "Enemigos/EstrategiaMovimiento.h"
 #include "EstrategiaMovimientoZigZag.generated.h"
 
+// STRATEGY concreta: avanza a la izquierda mientras sube y baja (onda senoidal).
 UCLASS()
 class IMPACTOESPACIAL_API UEstrategiaMovimientoZigZag : public UEstrategiaMovimiento
 {
 	GENERATED_BODY()
 
 public:
-	// Sobrescribimos la función matemática
+	// Sobrescribimos la funciï¿½n matemï¿½tica
 	virtual FVector CalcularNuevaPosicion(FVector PosicionActual, float DeltaTime, float Velocidad) override;
 };

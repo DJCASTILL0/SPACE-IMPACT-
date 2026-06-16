@@ -10,6 +10,12 @@ class USphereComponent;
 class UStaticMeshComponent;
 class UProjectileMovementComponent;
 
+// ============================================================================
+//  ProyectilBase  ->  pieza del PATRï¿½N OBJECT POOL
+//  La bala bï¿½sica. En vez de crearse y destruirse, se "enciende" (ActivarProyectil)
+//  y se "apaga" (DesactivarProyectil) para reutilizarse desde la piscina de la nave.
+//  Es la clase padre de los proyectiles especiales (Lï¿½ser, Misil...).
+// ============================================================================
 UCLASS()
 class IMPACTOESPACIAL_API AProyectilBase : public AActor
 {
@@ -17,24 +23,24 @@ class IMPACTOESPACIAL_API AProyectilBase : public AActor
 
 protected:
 	UPROPERTY()
-	USphereComponent* ComponenteColision;
+	USphereComponent* ComponenteColision;   // Esfera que detecta el impacto
 
 	UPROPERTY()
-	UStaticMeshComponent* MallaProyectil;
+	UStaticMeshComponent* MallaProyectil;    // Malla visible de la bala
 
 	// Manejador para que la bala vuelva a la piscina si no choca con nada
 	FTimerHandle TemporizadorDesactivacion;
-	float TiempoVida;
+	float TiempoVida;                        // Segundos hasta apagarse sola
 
 public:
 	AProyectilBase();
 
-	// Lógica de Piscina
-	bool bEstaActivo;
-	virtual void ActivarProyectil(FVector NuevaUbicacion, FRotator NuevaRotacion);
-	void DesactivarProyectil();
+	// Lï¿½gica de Piscina (Object Pool)
+	bool bEstaActivo;                        // ï¿½Estï¿½ en uso o "dormida" en la piscina?
+	virtual void ActivarProyectil(FVector NuevaUbicacion, FRotator NuevaRotacion); // Enciende la bala
+	void DesactivarProyectil();              // Apaga la bala y la devuelve a la piscina
 	UPROPERTY()
-	UProjectileMovementComponent* ComponenteMovimiento;
+	UProjectileMovementComponent* ComponenteMovimiento; // Mueve la bala automÃ¡ticamente
 	void EstablecerTiempoVida(float NuevoTiempo) { TiempoVida = NuevoTiempo; }
 protected:
 	virtual void BeginPlay() override;
@@ -43,8 +49,9 @@ protected:
 
 	//UFUNCTION()
 	//virtual void AlImpactar(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+	// Se llama cuando la bala se superpone con otro actor: le aplica daï¿½o.
 	UFUNCTION()
 	void AlSuperponer(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 public:
-	float CantidadDano;
+	float CantidadDano;   // Daï¿½o que hace esta bala al impactar
 };

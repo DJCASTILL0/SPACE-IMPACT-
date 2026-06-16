@@ -6,6 +6,7 @@
 #include "Proyectiles/ProyectilBase.h"
 #include "ProyectilLaser.generated.h"
 
+// Láser recto: muy rápido y potente; ATRAVIESA enemigos (no se desactiva al tocar).
 UCLASS()
 class IMPACTOESPACIAL_API AProyectilLaser : public AProyectilBase
 {

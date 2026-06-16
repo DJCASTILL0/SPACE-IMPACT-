@@ -1,3 +1,5 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -5,34 +7,57 @@
 #include "Enemigos/EstrategiaMovimiento.h"
 #include "EnemigoBase.generated.h"
 
+// ============================================================================
+//  EnemigoBase  ->  usa el PATRï¿½N STRATEGY para moverse
+//  Clase padre de todos los enemigos. Tiene su colisiï¿½n, su malla y una
+//  "estrategia de movimiento" intercambiable. En su Tick le pide a la estrategia
+//  la nueva posiciï¿½n; asï¿½ cada enemigo se mueve distinto sin cambiar esta clase.
+// ============================================================================
 UCLASS()
 class IMPACTOESPACIAL_API AEnemigoBase : public AActor
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
+
+public:
+    UPROPERTY()
+    class UBoxComponent* ComponenteColision;       // Caja que detecta choques con la nave
+
+    UPROPERTY()
+    class UStaticMeshComponent* MallaEnemigo;       // Malla visible principal
+
+    UPROPERTY()
+    class UStaticMeshComponent* MallaSecundaria;    // Mallas extra (formas compuestas)
+
+    UPROPERTY()
+    class UStaticMeshComponent* MallaTerciaria;
 
 protected:
-	UPROPERTY()
-	class UBoxComponent* ComponenteColision;
+    // STRATEGY: puntero a la estrategia de movimiento actual (Lineal, ZigZag...).
+    UPROPERTY()
+    UEstrategiaMovimiento* EstrategiaActual;
 
-	UPROPERTY()
-	class UStaticMeshComponent* MallaEnemigo;
+    // Se llama automï¿½ticamente cuando el enemigo choca con algo (evento Observer de Unreal).
+    UFUNCTION()
+    void AlChocar(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
-	// Referencia al Patrón Strategy
-	UPROPERTY()
-	UEstrategiaMovimiento* EstrategiaActual;
-	// Función para detectar choques
-	UFUNCTION()
-	void AlChocar(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 public:
-	AEnemigoBase();
-	virtual void Tick(float DeltaTime) override;
+    AEnemigoBase();
+    virtual void Tick(float DeltaTime) override;   // Cada frame: mueve segï¿½n la estrategia
 
-	// Función para asignar la estrategia (Inyección de dependencia)
-	void EstablecerEstrategia(UEstrategiaMovimiento* NuevaEstrategia) { EstrategiaActual = NuevaEstrategia; }
+    // STRATEGY: cambia la estrategia de movimiento (incluso en pleno juego).
+    void EstablecerEstrategia(UEstrategiaMovimiento* NuevaEstrategia) { EstrategiaActual = NuevaEstrategia; }
 
-	// Estadísticas
-	float Vida;
-	float Velocidad;
+    float Vida;
+    float Velocidad;
 
-	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+    // Seguro de muerte: evita que la lï¿½gica de muerte (puntos, subir de nivel,
+    // Destroy) se ejecute varias veces si llegan varios impactos en el mismo
+    // frame. Sin esto, un jefe podï¿½a "subir" 2-3 niveles de golpe.
+    bool bMuerto = false;
+
+    void ConfigurarApariencia(FColor ColorPrincipal, FColor ColorSecundario); // Colorea las mallas
+public:
+    void EstablecerMesh(const TCHAR* RutaMesh); // Carga una malla desde una ruta de Content
+    // Recibe daï¿½o; si la vida llega a 0, da puntos y se destruye.
+    virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 };

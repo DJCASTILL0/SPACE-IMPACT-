@@ -10,6 +10,11 @@ class USphereComponent;
 class UStaticMeshComponent;
 class UProjectileMovementComponent;
 
+// ============================================================================
+//  CapsulaPoder
+//  Power-up que flota hacia la izquierda. Si la nave lo toca (overlap), le
+//  activa el disparo mï¿½ltiple y da puntos. Si nadie lo recoge, desaparece solo.
+// ============================================================================
 UCLASS()
 class IMPACTOESPACIAL_API ACapsulaPoder : public AActor
 {
@@ -29,7 +34,7 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	UProjectileMovementComponent* ComponenteMovimiento;
 
-	// --- FUNCIÓN DE SUPERPOSICIÓN ---
+	// --- FUNCIï¿½N DE SUPERPOSICIï¿½N ---
 	// Usaremos Overlap en lugar de Hit para que la nave la "atraviese" y la recoja suavemente
 	UFUNCTION()
 	void AlSuperponerse(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);

@@ -6,6 +6,7 @@
 #include "Proyectiles/ProyectilBase.h"
 #include "ProyectilLaserVertical.generated.h"
 
+// Láser vertical: una columna alargada que atraviesa enemigos (overlap).
 UCLASS()
 class IMPACTOESPACIAL_API AProyectilLaserVertical : public AProyectilBase
 {

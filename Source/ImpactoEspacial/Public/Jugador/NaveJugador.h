@@ -6,9 +6,28 @@
 #include "GameFramework/Pawn.h"
 #include "NaveJugador.generated.h"
 
-// Declaración anticipada para el Patrón Object Pool
+// Declaraciï¿½n anticipada para el Patrï¿½n Object Pool
 class AProyectilBase;
 class USoundBase;
+
+// --- PATRï¿½N OBSERVER ---
+// La nave es el SUJETO. Estos delegados son los "eventos" que la nave PUBLICA
+// (Broadcast) cuando cambian sus estadï¿½sticas. Los OBSERVADORES (el HUD) se
+// suscriben con AddDynamic y reaccionan solos, sin que la nave los conozca.
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSaludCambiada, float, VidaActual, float, VidaMaxima);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnVidasCambiadas, int32, Vidas);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPuntosCambiados, int32, Puntos);
+
+// ============================================================================
+//  NaveJugador
+//  El Pawn que controla el jugador. Aquï¿½ vive:
+//   - El movimiento y la cï¿½mara lateral.
+//   - El disparo, que usa el PATRï¿½N OBJECT POOL (PiscinaProyectiles) para
+//     reciclar balas en vez de crear/destruir.
+//   - El SUJETO del PATRï¿½N OBSERVER: publica eventos de salud/vidas/puntos a
+//     los que se suscribe el HUD.
+//   - Las habilidades especiales (misil, lï¿½ser, lï¿½ser vertical) y los power-ups.
+// ============================================================================
 UCLASS()
 class IMPACTOESPACIAL_API ANaveJugador : public APawn
 {
@@ -31,13 +50,13 @@ protected:
 	UPROPERTY()
 	class UFloatingPawnMovement* ComponenteMovimiento;
 
-	// --- PATRÓN OBJECT POOL (Piscina de Objetos) ---
+	// --- PATRï¿½N OBJECT POOL (Piscina de Objetos) ---
 	UPROPERTY()
 	TArray<AProyectilBase*> PiscinaProyectiles;
 
 	int32 TamanoPiscina;
 
-	// Función para buscar un proyectil disponible en la piscina
+	// Funciï¿½n para buscar un proyectil disponible en la piscina
 	AProyectilBase* ObtenerProyectilDePiscina();
 
 protected:
@@ -49,7 +68,7 @@ protected:
 	UPROPERTY()
 	class UPantallaHUD* MiHUD;
 
-	// Puntuación
+	// Puntuaciï¿½n
 	int32 PuntosActuales;
 
 public:
@@ -64,12 +83,13 @@ public:
 	void ActivarLaserVertical();
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	// --- ENTRADAS DE MOVIMIENTO ---
 	void MoverDerecha(float Valor);
 	void MoverArriba(float Valor);
 
-	// --- MECÁNICA DE DISPARO ---
+	// --- MECï¿½NICA DE DISPARO ---
 	void IniciarDisparo();
 	void DetenerDisparo();
 	void EfectuarDisparo();
@@ -77,23 +97,38 @@ protected:
 	void UsarHabilidad2();
 	void UsarHabilidad3();
 public:
-	// --- ESTADÍSTICAS ---
+	// --- ESTADï¿½STICAS ---
 	float VidaMaxima;
 	float VidaActual;
 	int32 VidasTotales;
 	float VelocidadMovimiento;
 
-	// Variables lógicas de disparo
+	// Variables lï¿½gicas de disparo
 	float VelocidadDisparo;
 	bool bEstaDisparando;
 	FTimerHandle ManejadorTemporizadorDisparo;
+	// Handles del disparo en abanico (deben ser miembros para poder cancelarlos
+	// al destruirse la nave; si fueran locales con lambda, seguirï¿½an disparando
+	// sobre un 'this' ya liberado -> crash).
+	FTimerHandle ManejadorAbanicoArriba;
+	FTimerHandle ManejadorAbanicoAbajo;
 	// --- SISTEMA DE POWER-UPS ---
 	bool bTieneDisparoMultiple;
 	FTimerHandle ManejadorTemporizadorPoder;
 
 	void SumarPuntos(int32 Cantidad);
 
-	// Funciones para activar y desactivar el poder (deben ser públicas para que la cápsula las llame)
+	// --- EVENTOS DEL PATRï¿½N OBSERVER (el HUD se suscribe a estos) ---
+	UPROPERTY()
+	FOnSaludCambiada OnSaludCambiada;
+
+	UPROPERTY()
+	FOnVidasCambiadas OnVidasCambiadas;
+
+	UPROPERTY()
+	FOnPuntosCambiados OnPuntosCambiados;
+
+	// Funciones para activar y desactivar el poder (deben ser pï¿½blicas para que la cï¿½psula las llame)
 	void ActivarDisparoMultiple();
 	void DesactivarDisparoMultiple();
 	// Getters puros
@@ -108,4 +143,6 @@ public:
 	// --- HABILIDADES ESPECIALES ---
 public:
 	void MostrarVictoria();
+private:
+	FVector UbicacionInicial;
 };

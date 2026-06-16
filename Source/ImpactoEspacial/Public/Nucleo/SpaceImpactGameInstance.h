@@ -6,13 +6,19 @@
 #include "Engine/GameInstance.h"
 #include "SpaceImpactGameInstance.generated.h"
 
+// ============================================================================
+//  SpaceImpactGameInstance
+//  El GameInstance "vive" durante toda la partida, aunque cambies de nivel.
+//  Por eso aquï¿½ guardamos lo que debe SOBREVIVIR entre mapas: la puntuaciï¿½n
+//  final, el nivel alcanzado y la referencia al GameManager.
+// ============================================================================
 UCLASS()
 class IMPACTOESPACIAL_API USpaceImpactGameInstance : public UGameInstance
 {
     GENERATED_BODY()
 
 public:
-    // Puntuación que persiste entre niveles
+    // Puntuaciï¿½n que persiste entre niveles
     UPROPERTY(BlueprintReadWrite)
     int32 PuntuacionFinal;
 
@@ -22,4 +28,10 @@ public:
 
     void GuardarPuntuacion(int32 Puntos, int32 Nivel);
     void ResetearDatos();
+
+    // Referencia "fuerte" al GameManager activo. Al vivir aquï¿½ (el GameInstance
+    // persiste entre niveles y estï¿½ protegido del GC), el GameManager no se borra
+    // a mitad de partida ni queda como puntero fantasma al cambiar de nivel.
+    UPROPERTY()
+    class UGameManager* GameManagerActivo;
 };

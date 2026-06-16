@@ -11,8 +11,8 @@
 AGeneradorEnemigos::AGeneradorEnemigos()
 {
 	PrimaryActorTick.bCanEverTick = false;
-	TiempoEntreEnemigos = 1.0f; // Aparece un enemigo cada 2 segundos
-	// Esto crea un icono de "Sprite" que verás en el editor para poder pincharlo y moverlo
+	TiempoEntreEnemigos = 0.5f; // Aparece un enemigo cada 2 segundos
+	// Esto crea un icono de "Sprite" que verï¿½s en el editor para poder pincharlo y moverlo
 	UBillboardComponent* IconoEditor = CreateDefaultSubobject<UBillboardComponent>(TEXT("IconoEditor"));
 	RootComponent = IconoEditor;
 }
@@ -38,26 +38,16 @@ void AGeneradorEnemigos::AparecerEnemigo()
             FString::Printf(TEXT("Enemigos restantes: %d, JefeDerrotado: %s"),
                 GM->ObtenerEnemigosRestantes(),
                 GM->ObtenerJefeDerrotado() ? TEXT("SI") : TEXT("NO")));
-    // Si ya no quedan enemigos, spawnear jefe según nivel
+    // Si ya no quedan enemigos, spawnear jefe segï¿½n nivel
     if (GM->EsMomentoDelJefe())
     {
         FVector UbicacionJefe = GetActorLocation() + FVector(500.f, 0.f, 0.f);
 
-        switch (GM->ObtenerNivelActual())
-        {
-        case 1:
-            Mundo->SpawnActor<ADragon>(ADragon::StaticClass(), UbicacionJefe, FRotator::ZeroRotator);
-            break;
-        case 2:
-            Mundo->SpawnActor<APezMonstruo>(APezMonstruo::StaticClass(), UbicacionJefe, FRotator::ZeroRotator);
-            break;
-        case 3:
-            Mundo->SpawnActor<AKraken>(AKraken::StaticClass(), UbicacionJefe, FRotator::ZeroRotator);
-            break;
-        }
+        // El generador NO conoce las clases concretas de jefe: se lo pide a la fÃ¡brica.
+        UFabricaEnemigos::GenerarJefe(Mundo, GM->ObtenerNivelActual(), UbicacionJefe);
 
         if (GEngine)
-            GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("¡JEFE APARECIDO!"));
+            GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ï¿½JEFE APARECIDO!"));
 
         // Detener el generador temporalmente
         GetWorldTimerManager().ClearTimer(TemporizadorSpawn);

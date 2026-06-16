@@ -29,7 +29,7 @@ ANaveJugador::ANaveJugador()
 	// Permitir que el Tick se ejecute
 	PrimaryActorTick.bCanEverTick = true;
 
-	// 1. Configurar Colisión Base
+	// 1. Configurar Colision Base
 	ComponenteColision = CreateDefaultSubobject<USphereComponent>(TEXT("ComponenteColision"));
 	ComponenteColision->InitSphereRadius(40.0f);
 	ComponenteColision->SetCollisionProfileName(TEXT("Pawn"));
@@ -38,11 +38,11 @@ ANaveJugador::ANaveJugador()
 	// 2. Configurar Malla (Cubo temporal)
 	MallaNave = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MallaNave"));
 	MallaNave->SetupAttachment(RootComponent);
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> RecursoMalla(TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> RecursoMalla(TEXT("/Game/Jugador/nave/Rocket.Rocket"));
 	if (RecursoMalla.Succeeded()) { MallaNave->SetStaticMesh(RecursoMalla.Object); }
 	MallaNave->SetWorldScale3D(FVector(0.5f, 0.5f, 0.5f));
 
-	// 3. Brazo de Cámara (SpringArm)
+	// 3. Brazo de Cï¿½mara (SpringArm)
 	BrazoCamara = CreateDefaultSubobject<USpringArmComponent>(TEXT("BrazoCamara"));
 	BrazoCamara->SetupAttachment(RootComponent);
 	BrazoCamara->TargetArmLength = 800.0f;
@@ -50,7 +50,7 @@ ANaveJugador::ANaveJugador()
 	BrazoCamara->bDoCollisionTest = false;
 	BrazoCamara->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
 
-	// 4. Cámara Lateral Ortográfica
+	// 4. Cï¿½mara Lateral Ortogrï¿½fica
 	CamaraLateral = CreateDefaultSubobject<UCameraComponent>(TEXT("CamaraLateral"));
 	CamaraLateral->SetupAttachment(BrazoCamara, USpringArmComponent::SocketName);
 	CamaraLateral->ProjectionMode = ECameraProjectionMode::Orthographic;
@@ -67,7 +67,7 @@ ANaveJugador::ANaveJugador()
 
 	VelocidadDisparo = 0.15f; // Cadencia de tiro
 	bEstaDisparando = false;
-	TamanoPiscina = 100; // ¡Aumentamos la piscina para el disparo triple!
+	TamanoPiscina = 100; // ï¿½Aumentamos la piscina para el disparo triple!
 	bTieneDisparoMultiple = false;
 	
 }
@@ -75,6 +75,8 @@ ANaveJugador::ANaveJugador()
 void ANaveJugador::BeginPlay()
 {
 	Super::BeginPlay();
+	// Guardar ubicacion inicial
+	UbicacionInicial = GetActorLocation();
 	VidaActual = VidaMaxima;
 	PuntosActuales = 0;
 
@@ -105,9 +107,14 @@ void ANaveJugador::BeginPlay()
 		if (MiHUD)
 		{
 			MiHUD->AddToViewport();
-			MiHUD->ActualizarSalud(VidaActual, VidaMaxima);
-			MiHUD->ActualizarVidas(VidasTotales);
-			MiHUD->ActualizarPuntos(PuntosActuales);
+
+			// El HUD (observador) se suscribe a los eventos de la nave (sujeto).
+			MiHUD->Observar(this);
+
+			// PUBLICAMOS los valores iniciales para que el HUD se pinte al arrancar.
+			OnSaludCambiada.Broadcast(VidaActual, VidaMaxima);
+			OnVidasCambiadas.Broadcast(VidasTotales);
+			OnPuntosCambiados.Broadcast(PuntosActuales);
 		}
 	}
 
@@ -132,6 +139,24 @@ void ANaveJugador::BeginPlay()
 	}
 }
 
+void ANaveJugador::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// Cancelar TODOS los temporizadores de esta nave antes de que se libere la
+	// memoria. Sin esto, los timers del disparo en abanico (lambdas que capturan
+	// 'this') podrï¿½an ejecutarse tras el Destroy() -> acceso a memoria liberada.
+	if (UWorld* Mundo = GetWorld())
+	{
+		FTimerManager& Temporizadores = Mundo->GetTimerManager();
+		// Timers atados a 'this' por nombre de funciï¿½n (disparo, poder).
+		Temporizadores.ClearAllTimersForObject(this);
+		// Los timers con lambda NO se atan a 'this', hay que limpiarlos por handle.
+		Temporizadores.ClearTimer(ManejadorAbanicoArriba);
+		Temporizadores.ClearTimer(ManejadorAbanicoAbajo);
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
 void ANaveJugador::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -148,7 +173,7 @@ void ANaveJugador::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	// Enlaces de Disparo
 	PlayerInputComponent->BindAction("Disparar", IE_Pressed, this, &ANaveJugador::IniciarDisparo);
 	PlayerInputComponent->BindAction("Disparar", IE_Released, this, &ANaveJugador::DetenerDisparo);
-	// Vinculamos la acción de Disparo Especial
+	// Vinculamos la acciï¿½n de Disparo Especial
 	PlayerInputComponent->BindAction("Habilidad1", IE_Pressed, this, &ANaveJugador::UsarHabilidad1);
 	PlayerInputComponent->BindAction("Habilidad2", IE_Pressed, this, &ANaveJugador::UsarHabilidad2);
 	PlayerInputComponent->BindAction("Habilidad3", IE_Pressed, this, &ANaveJugador::UsarHabilidad3);
@@ -173,7 +198,7 @@ void ANaveJugador::MoverArriba(float Valor)
 void ANaveJugador::IniciarDisparo()
 {
 	bEstaDisparando = true;
-	// Disparo inmediato y repetición por temporizador
+	// Disparo inmediato y repeticiï¿½n por temporizador
 	GetWorldTimerManager().SetTimer(ManejadorTemporizadorDisparo, this, &ANaveJugador::EfectuarDisparo, VelocidadDisparo, true, 0.0f);
 }
 
@@ -187,13 +212,13 @@ AProyectilBase* ANaveJugador::ObtenerProyectilDePiscina()
 {
 	for (AProyectilBase* Proyectil : PiscinaProyectiles)
 	{
-		// Si el proyectil no está en uso (está dormido), lo devolvemos
+		// Si el proyectil no estï¿½ en uso (estï¿½ dormido), lo devolvemos
 		if (Proyectil && !Proyectil->bEstaActivo)
 		{
 			return Proyectil;
 		}
 	}
-	// Si todos están ocupados, devolvemos nulo (o podríamos expandir la piscina)
+	// Si todos estï¿½n ocupados, devolvemos nulo (o podrï¿½amos expandir la piscina)
 	return nullptr;
 }
 
@@ -201,36 +226,23 @@ void ANaveJugador::EfectuarDisparo()
 {
 	const FVector UbicacionSalida = GetActorLocation() + FVector(80.0f, 0.0f, 0.0f);
 
-	/*if (bTieneDisparoMultiple)
-	{
-		// Centro
-		AProyectilBase* BalaCentro = ObtenerProyectilDePiscina();
-		if (BalaCentro) BalaCentro->ActivarProyectil(UbicacionSalida, FRotator::ZeroRotator);
-
-		// Arriba (con offset en Z)
-		AProyectilBase* BalaArriba = ObtenerProyectilDePiscina();
-		if (BalaArriba) BalaArriba->ActivarProyectil(UbicacionSalida + FVector(0.f, 0.f, 30.f), FRotator(0.f, 15.f, 0.f));
-
-		// Abajo (con offset en Z)
-		AProyectilBase* BalaAbajo = ObtenerProyectilDePiscina();
-		if (BalaAbajo) BalaAbajo->ActivarProyectil(UbicacionSalida + FVector(0.f, 0.f, -30.f), FRotator(0.f, -15.f, 0.f));
-	}*/
+	
 	if (bTieneDisparoMultiple)
 	{
-		// Pequeño retraso entre cada bala para que no se solapen
+		// Pequeï¿½o retraso entre cada bala para que no se solapen
 		AProyectilBase* BalaCentro = ObtenerProyectilDePiscina();
 		if (BalaCentro) BalaCentro->ActivarProyectil(UbicacionSalida, FRotator::ZeroRotator);
 
-		// Usar Timer para disparar las otras 2 con retraso
-		FTimerHandle TimerArriba;
-		GetWorldTimerManager().SetTimer(TimerArriba, [this, UbicacionSalida]()
+		// Usar Timer para disparar las otras 2 con retraso.
+		// Usamos handles miembro (no locales) para poder cancelarlos en EndPlay
+		// y evitar que la lambda se ejecute sobre una nave ya destruida.
+		GetWorldTimerManager().SetTimer(ManejadorAbanicoArriba, [this, UbicacionSalida]()
 			{
 				AProyectilBase* BalaArriba = ObtenerProyectilDePiscina();
 				if (BalaArriba) BalaArriba->ActivarProyectil(UbicacionSalida + FVector(0.f, 0.f, 30.f), FRotator(0.f, 15.f, 0.f));
 			}, 0.05f, false);
 
-		FTimerHandle TimerAbajo;
-		GetWorldTimerManager().SetTimer(TimerAbajo, [this, UbicacionSalida]()
+		GetWorldTimerManager().SetTimer(ManejadorAbanicoAbajo, [this, UbicacionSalida]()
 			{
 				AProyectilBase* BalaAbajo = ObtenerProyectilDePiscina();
 				if (BalaAbajo) BalaAbajo->ActivarProyectil(UbicacionSalida + FVector(0.f, 0.f, -30.f), FRotator(0.f, -15.f, 0.f));
@@ -249,13 +261,11 @@ float ANaveJugador::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 
 	// Dentro de TakeDamage, cada vez que restes vida:
 	VidaActual -= DanioRecibido;
-	if (MiHUD)
-	{
-		MiHUD->ActualizarSalud(VidaActual, VidaMaxima);
-		MiHUD->ActualizarVidas(VidasTotales);
-	}
+	// PUBLICAMOS el cambio: el HUD suscrito se actualiza solo (Observer).
+	OnSaludCambiada.Broadcast(VidaActual, VidaMaxima);
+	OnVidasCambiadas.Broadcast(VidasTotales);
 
-	// Verificamos si la nave explotó
+	// Verificamos si la nave explotï¿½
 	if (VidaActual <= 0.0f)
 	{
 		VidasTotales--; // Perdemos una vida
@@ -264,8 +274,7 @@ float ANaveJugador::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 		{
 			// REAPARECER (Respawn temporal)
 			VidaActual = VidaMaxima;
-			// Reaparecer en el borde izquierdo de la pantalla (donde empieza el jugador)
-			SetActorLocation(FVector(-500.0f, 0.0f, 0.0f));
+			SetActorLocation(UbicacionInicial);
 
 			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Nave destruida. Vidas restantes: %d"), VidasTotales));
 		}
@@ -304,7 +313,7 @@ float ANaveJugador::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 	else
 	{
 		// Si sobrevivimos al golpe, mostramos la vida restante
-		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Orange, FString::Printf(TEXT("¡Impacto! Vida actual: %f"), VidaActual));
+		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Orange, FString::Printf(TEXT("ï¿½Impacto! Vida actual: %f"), VidaActual));
 	}
 
 	return DanioRecibido;
@@ -313,10 +322,8 @@ float ANaveJugador::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 void ANaveJugador::SumarPuntos(int32 Cantidad)
 {
 	PuntosActuales += Cantidad;
-	if (MiHUD)
-	{
-		MiHUD->ActualizarPuntos(PuntosActuales);
-	}
+	// PUBLICAMOS el cambio de puntos (el HUD suscrito reacciona).
+	OnPuntosCambiados.Broadcast(PuntosActuales);
 
 	// Sincronizar con el GameManager
 	UGameManager* GM = UGameManager::ObtenerInstancia(GetWorld());
@@ -330,7 +337,7 @@ void ANaveJugador::ActivarDisparoMultiple()
 {
 	bTieneDisparoMultiple = true;
 
-	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, TEXT("¡DISPARO EN ABANICO ACTIVADO!"));
+	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, TEXT("ï¿½DISPARO EN ABANICO ACTIVADO!"));
 
 	GetWorldTimerManager().SetTimer(ManejadorTemporizadorPoder, this, &ANaveJugador::DesactivarDisparoMultiple, 8.0f, false);
 }
@@ -373,7 +380,7 @@ void ANaveJugador::ActivarLaserRecto()
 		Laser->ActivarProyectil(UbicacionSalida, FRotator::ZeroRotator);
 
 		if (GEngine)
-			GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Cyan, TEXT("¡LÁSER RECTO!"));
+			GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Cyan, TEXT("ï¿½Lï¿½SER RECTO!"));
 	}
 }
 
@@ -393,7 +400,7 @@ void ANaveJugador::ActivarMisil()
 		Misil->ActivarProyectil(UbicacionSalida, FRotator::ZeroRotator);
 
 		if (GEngine)
-			GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Yellow, TEXT("¡MISIL OSCILATORIO!"));
+			GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Yellow, TEXT("ï¿½MISIL OSCILATORIO!"));
 	}
 }
 
@@ -413,7 +420,7 @@ void ANaveJugador::ActivarLaserVertical()
 		LaserV->ActivarProyectil(UbicacionSalida, FRotator::ZeroRotator);
 
 		if (GEngine)
-			GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Magenta, TEXT("¡LÁSER VERTICAL!"));
+			GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Magenta, TEXT("ï¿½Lï¿½SER VERTICAL!"));
 	}
 }
 

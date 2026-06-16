@@ -6,6 +6,12 @@
 #include "GameFramework/GameModeBase.h"
 #include "ImpactoEspacialGameModeBase.generated.h"
 
+// ============================================================================
+//  GameMode
+//  Define las "reglas" del nivel: quï¿½ pawn controla el jugador (la nave) y quï¿½
+//  widgets de UI usar. En BeginPlay muestra el menï¿½ (si hay) y crea el mapa.
+//  Las clases de widget se asignan desde el editor en BP_ModoJuego.
+// ============================================================================
 UCLASS()
 class IMPACTOESPACIAL_API AImpactoEspacialGameModeBase : public AGameModeBase
 {
@@ -13,17 +19,17 @@ class IMPACTOESPACIAL_API AImpactoEspacialGameModeBase : public AGameModeBase
 
 public:
     AImpactoEspacialGameModeBase();
-    // Clase del menú (se asigna en BP_ModoJuego)
+    // Clase del menï¿½ (se asigna en BP_ModoJuego)
     UPROPERTY(EditAnywhere, Category = "UI")
     TSubclassOf<class UUserWidget> ClaseMenu;
 public:
     UPROPERTY(EditAnywhere, Category = "UI")
-    TSubclassOf<class UUserWidget> ClaseGameOver;
+    TSubclassOf<class UUserWidget> ClaseGameOver; // Widget de pantalla Game Over
 
     UPROPERTY(EditAnywhere, Category = "UI")
-    TSubclassOf<class UUserWidget> ClaseVictoria;
+    TSubclassOf<class UUserWidget> ClaseVictoria; // Widget de pantalla Victoria
 protected:
-    virtual void BeginPlay() override;
+    virtual void BeginPlay() override; // Se ejecuta al cargar el nivel
 
-    
+
 };

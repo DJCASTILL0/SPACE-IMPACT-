@@ -6,12 +6,13 @@
 #include "Enemigos/EstrategiaMovimiento.h"
 #include "EstrategiaMovimientoPerseguidor.generated.h"
 
+// STRATEGY concreta: PERSIGUE al jugador (ajusta su altura hacia la nave).
 UCLASS()
 class IMPACTOESPACIAL_API UEstrategiaMovimientoPerseguidor : public UEstrategiaMovimiento
 {
 	GENERATED_BODY()
 
 public:
-	// Sobrescribimos la función para seguir al jugador
+	// Sobrescribimos la funciï¿½n para seguir al jugador
 	virtual FVector CalcularNuevaPosicion(FVector PosicionActual, float DeltaTime, float Velocidad) override;
 };

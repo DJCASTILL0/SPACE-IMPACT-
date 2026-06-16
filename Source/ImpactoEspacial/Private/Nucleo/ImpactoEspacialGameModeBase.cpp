@@ -2,6 +2,7 @@
 
 #include "Nucleo/ImpactoEspacialGameModeBase.h"
 #include "UI/PantallaMenu.h"
+#include "Nucleo/MapaEstelar.h"
 #include "Blueprint/UserWidget.h"
 #include "Engine/Engine.h"
 #include "Jugador/NaveJugador.h"
@@ -43,4 +44,7 @@ void AImpactoEspacialGameModeBase::BeginPlay()
             PC->SetInputMode(FInputModeGameOnly());
         }
     }
+
+    // Spawnear el mapa estelar
+    GetWorld()->SpawnActor<AMapaEstelar>(AMapaEstelar::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator);
 }

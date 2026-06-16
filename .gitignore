@@ -18,3 +18,7 @@ Build/
 # Archivos del sistema
 .DS_Store
 Thumbs.db
+
+# Contenido de muestra muy pesado (no se usa en el juego y supera el limite
+# de 100 MB por archivo de GitHub). Se ignora para poder subir el repo.
+Content/SoulCity/
