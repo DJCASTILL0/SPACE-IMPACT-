@@ -301,7 +301,7 @@ void ANaveJugador::ActivarDisparoMultiple()
 
 	bTieneDisparoMultiple = true;
 
-	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, TEXT("�DISPARO EN ABANICO ACTIVADO!"));
+	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, TEXT("�DISPARO MULTIPLE ACTIVADO!"));
 
 	GetWorldTimerManager().SetTimer(ManejadorTemporizadorPoder, this, &ANaveJugador::DesactivarDisparoMultiple, 8.0f, false);
 }

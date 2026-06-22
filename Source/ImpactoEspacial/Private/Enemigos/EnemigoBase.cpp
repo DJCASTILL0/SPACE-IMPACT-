@@ -8,6 +8,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Kismet/GameplayStatics.h"
+#include "PowerUps/CapsulaPoder.h"
 AEnemigoBase::AEnemigoBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -109,6 +110,18 @@ float AEnemigoBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 					GM->JefeDerrotado(GetWorld());
 					// No reanudar aqu�, lo har� IniciarSiguienteNivel
 				}
+			}
+		}
+
+		// Probabilidad (25%) de soltar una CapsulaPoder al morir, solo enemigos
+		// normales (no jefes). Recoger esa capsula es lo que activa el multidisparo.
+		if (!this->IsA(AJefeBase::StaticClass()) && FMath::FRand() < 0.25f)
+		{
+			if (UWorld* Mundo = GetWorld())
+			{
+				FActorSpawnParameters Params;
+				Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+				Mundo->SpawnActor<ACapsulaPoder>(ACapsulaPoder::StaticClass(), GetActorLocation(), FRotator::ZeroRotator, Params);
 			}
 		}
 
