@@ -28,10 +28,4 @@ public:
 
     void GuardarPuntuacion(int32 Puntos, int32 Nivel);
     void ResetearDatos();
-
-    // Referencia "fuerte" al GameManager activo. Al vivir aqu� (el GameInstance
-    // persiste entre niveles y est� protegido del GC), el GameManager no se borra
-    // a mitad de partida ni queda como puntero fantasma al cambiar de nivel.
-    UPROPERTY()
-    class UGameManager* GameManagerActivo;
 };

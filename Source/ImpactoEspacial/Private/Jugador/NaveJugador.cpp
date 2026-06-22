@@ -2,6 +2,9 @@
 
 #include "Jugador/NaveJugador.h"
 #include "Nucleo/GameManager.h"
+#include "Nucleo/FachadaJuego.h"
+#include "Armas/Arma.h"
+#include "Armas/DecoradorArma.h"
 #include "Proyectiles/ProyectilBase.h" // Necesario para gestionar la piscina
 #include "Proyectiles/ProyectilMisil.h"
 #include "Proyectiles/ProyectilLaserVertical.h"
@@ -80,25 +83,9 @@ void ANaveJugador::BeginPlay()
 	VidaActual = VidaMaxima;
 	PuntosActuales = 0;
 
-	UGameManager* GM = UGameManager::ObtenerInstancia(GetWorld());
-	if (GM)
-	{
-		GM->ResetearJuego();
-		GM->EstablecerNivel(1);
-		GM->EstablecerEnemigosEnOleada(10);
-	}
-
-	// --- ACTIVAR EL GENERADOR DE ENEMIGOS ---
-	TArray<AActor*> Generadores;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AGeneradorEnemigos::StaticClass(), Generadores);
-	if (Generadores.Num() > 0)
-	{
-		AGeneradorEnemigos* Gen = Cast<AGeneradorEnemigos>(Generadores[0]);
-		if (Gen)
-		{
-			Gen->ReanudarGeneracion();
-		}
-	}
+	// FACADE: una sola llamada inicia la partida
+	// (reinicia el GameManager, pone nivel 1 y arranca el generador de enemigos).
+	UFachadaJuego::IniciarPartida(GetWorld());
 
 	// --- CREAR EL HUD ---
 	if (ClaseHUD)
@@ -137,6 +124,9 @@ void ANaveJugador::BeginPlay()
 			}
 		}
 	}
+
+	// DECORATOR: arma inicial = basica (1 bala). Los power-ups la envolveran.
+	ArmaActual = NewObject<UArmaBasica>(this);
 }
 
 void ANaveJugador::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -222,36 +212,25 @@ AProyectilBase* ANaveJugador::ObtenerProyectilDePiscina()
 	return nullptr;
 }
 
+void ANaveJugador::LanzarProyectil(FVector Ubicacion, FRotator Rotacion)
+{
+	// OBJECT POOL: saca una bala dormida de la piscina y la enciende.
+	AProyectilBase* Bala = ObtenerProyectilDePiscina();
+	if (Bala)
+	{
+		Bala->ActivarProyectil(Ubicacion, Rotacion);
+	}
+}
+
 void ANaveJugador::EfectuarDisparo()
 {
 	const FVector UbicacionSalida = GetActorLocation() + FVector(80.0f, 0.0f, 0.0f);
 
-	
-	if (bTieneDisparoMultiple)
+	// DECORATOR: el arma actual decide COMO dispara. Si es la basica, 1 bala;
+	// si esta envuelta por un decorador (power-up), anade su efecto encima.
+	if (ArmaActual)
 	{
-		// Peque�o retraso entre cada bala para que no se solapen
-		AProyectilBase* BalaCentro = ObtenerProyectilDePiscina();
-		if (BalaCentro) BalaCentro->ActivarProyectil(UbicacionSalida, FRotator::ZeroRotator);
-
-		// Usar Timer para disparar las otras 2 con retraso.
-		// Usamos handles miembro (no locales) para poder cancelarlos en EndPlay
-		// y evitar que la lambda se ejecute sobre una nave ya destruida.
-		GetWorldTimerManager().SetTimer(ManejadorAbanicoArriba, [this, UbicacionSalida]()
-			{
-				AProyectilBase* BalaArriba = ObtenerProyectilDePiscina();
-				if (BalaArriba) BalaArriba->ActivarProyectil(UbicacionSalida + FVector(0.f, 0.f, 30.f), FRotator(0.f, 15.f, 0.f));
-			}, 0.05f, false);
-
-		GetWorldTimerManager().SetTimer(ManejadorAbanicoAbajo, [this, UbicacionSalida]()
-			{
-				AProyectilBase* BalaAbajo = ObtenerProyectilDePiscina();
-				if (BalaAbajo) BalaAbajo->ActivarProyectil(UbicacionSalida + FVector(0.f, 0.f, -30.f), FRotator(0.f, -15.f, 0.f));
-			}, 0.1f, false);
-	}
-	else
-	{
-		AProyectilBase* BalaNormal = ObtenerProyectilDePiscina();
-		if (BalaNormal) BalaNormal->ActivarProyectil(UbicacionSalida, FRotator::ZeroRotator);
+		ArmaActual->Disparar(this, UbicacionSalida);
 	}
 }
 
@@ -283,29 +262,8 @@ float ANaveJugador::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 			// GAME OVER
 			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("GAME OVER - TE QUEDASTE SIN VIDAS"));
 
-			// Notificar al GameManager
-			UGameManager* GM = UGameManager::ObtenerInstancia(GetWorld());
-			if (GM)
-			{
-				GM->GameOver();
-			}
-
-			// Mostrar Widget Game Over
-			if (ClaseGameOver)
-			{
-				UUserWidget* WidgetGO = CreateWidget<UUserWidget>(GetWorld(), ClaseGameOver);
-				if (WidgetGO)
-				{
-					WidgetGO->AddToViewport(100);
-
-					APlayerController* PC = GetWorld()->GetFirstPlayerController();
-					if (PC)
-					{
-						PC->bShowMouseCursor = true;
-						PC->SetInputMode(FInputModeUIOnly());
-					}
-				}
-			}
+			// FACADE: una sola llamada hace GameOver + mostrar widget + liberar cursor.
+			UFachadaJuego::TerminarPartida(GetWorld(), ClaseGameOver);
 
 			Destroy();
 		}
@@ -335,6 +293,12 @@ void ANaveJugador::SumarPuntos(int32 Cantidad)
 
 void ANaveJugador::ActivarDisparoMultiple()
 {
+	// DECORATOR: ENVOLVEMOS el arma actual con un decorador de disparo triple.
+	// (Se podrian apilar varios power-ups envolviendo uno sobre otro.)
+	UDecoradorDisparoTriple* Triple = NewObject<UDecoradorDisparoTriple>(this);
+	Triple->Envolver(ArmaActual);
+	ArmaActual = Triple;
+
 	bTieneDisparoMultiple = true;
 
 	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, TEXT("�DISPARO EN ABANICO ACTIVADO!"));
@@ -344,6 +308,12 @@ void ANaveJugador::ActivarDisparoMultiple()
 
 void ANaveJugador::DesactivarDisparoMultiple()
 {
+	// DECORATOR: quitamos una capa, volviendo al arma que estaba envuelta.
+	if (UDecoradorArma* Deco = Cast<UDecoradorArma>(ArmaActual))
+	{
+		ArmaActual = Deco->ArmaEnvuelta;
+	}
+
 	bTieneDisparoMultiple = false;
 
 	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT("Poder agotado..."));
@@ -426,21 +396,7 @@ void ANaveJugador::ActivarLaserVertical()
 
 void ANaveJugador::MostrarVictoria()
 {
-	// Mostrar Widget Victoria
-	if (ClaseVictoria)
-	{
-		UUserWidget* WidgetV = CreateWidget<UUserWidget>(GetWorld(), ClaseVictoria);
-		if (WidgetV)
-		{
-			WidgetV->AddToViewport(100);
-
-			APlayerController* PC = GetWorld()->GetFirstPlayerController();
-			if (PC)
-			{
-				PC->bShowMouseCursor = true;
-				PC->SetInputMode(FInputModeUIOnly());
-			}
-		}
-	}
+	// FACADE: muestra la pantalla de victoria y libera el cursor en una llamada.
+	UFachadaJuego::MostrarVictoria(GetWorld(), ClaseVictoria);
 }
 

@@ -4,9 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
+#include "Templates/SubclassOf.h"
 #include "GameManager.generated.h"
 
-// Los posibles estados del juego (una "m�quina de estados" simple con enum).
+class UEstadoJuego;   // STATE: clase base de los estados (definida en EstadoJuego.h)
+
+// Valores de estado del juego. El comportamiento real lo dan las clases de
+// estado (patron State); este enum se usa solo para consultar en que estado se esta.
 UENUM()
 enum class EEstadoJuego : uint8
 {
@@ -32,13 +36,21 @@ private:
     UPROPERTY()
     UWorld* MundoActual;            // El mundo (nivel) en el que estamos ahora
 
-    EEstadoJuego EstadoActual;      // En qu� estado est� el juego (jugando, game over...)
+    // STATE: el estado actual es un OBJETO (no un enum); se intercambia con CambiarEstado().
+    UPROPERTY()
+    UEstadoJuego* EstadoObjeto;
+
     int32 PuntuacionTotal;          // Puntos acumulados
     int32 OleadaActual;             // Nivel/oleada actual (1, 2, 3...)
     int32 EnemigosRestantesEnOleada;// Cu�ntos enemigos faltan por matar
     bool bJefeDerrotado;            // �Ya se venci� al jefe de este nivel?
 
     UGameManager();                 // Constructor PRIVADO (rasgo del Singleton)
+
+    // SINGLETON: la UNICA instancia de la clase.
+    // (Los UObject de Unreal ya no son copiables, asi que no hace falta borrar
+    //  el constructor de copia: GENERATED_BODY() ya lo gestiona.)
+    static UGameManager* Instancia;
 
 public:
     // Punto de acceso �nico del Singleton: devuelve siempre el mismo GameManager.
@@ -50,7 +62,10 @@ public:
     void ReanudarJuego();
     void GameOver();                // Pasa a estado GameOver y muestra su pantalla
     void VictoriaJuego();
-    EEstadoJuego ObtenerEstado() const { return EstadoActual; }
+    EEstadoJuego ObtenerEstado() const;   // devuelve el tipo del estado actual
+
+    // STATE: cambia el estado del juego creando el objeto de estado indicado.
+    void CambiarEstado(TSubclassOf<UEstadoJuego> NuevoEstado);
 
     void SumarPuntos(int32 Cantidad);
     int32 ObtenerPuntuacion() const { return PuntuacionTotal; }

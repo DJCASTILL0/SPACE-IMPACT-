@@ -4,6 +4,7 @@
 #include "Enemigos/EstrategiaMovimientoZigZag.h"
 #include "Enemigos/EstrategiaMovimientoPerseguidor.h"
 #include "Enemigos/EstrategiaMovimientoDiagonal.h"
+#include "Enemigos/ConstructorEnemigo.h"
 #include "Enemigos/JefeBase.h"
 #include "Enemigos/Dragon.h"
 #include "Enemigos/PezMonstruo.h"
@@ -13,75 +14,44 @@ AEnemigoBase* UFabricaEnemigos::GenerarEnemigo(UWorld* Mundo, ETipoEnemigo Tipo,
 {
     if (!Mundo) return nullptr;
 
-    FActorSpawnParameters Parametros;
-    Parametros.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    // Malla comun para los enemigos normales.
+    const TCHAR* Malla = TEXT("/Game/Jugador/bbghast/Ghast.Ghast");
 
-    AEnemigoBase* NuevoEnemigo = Mundo->SpawnActor<AEnemigoBase>(AEnemigoBase::StaticClass(), Ubicacion, FRotator::ZeroRotator, Parametros);
-
-    if (NuevoEnemigo)
+    // La FABRICA decide el tipo; el BUILDER lo arma paso a paso.
+    switch (Tipo)
     {
-        UEstrategiaMovimientoLineal* Lineal = NewObject<UEstrategiaMovimientoLineal>(NuevoEnemigo);
-        UEstrategiaMovimientoZigZag* ZigZag = NewObject<UEstrategiaMovimientoZigZag>(NuevoEnemigo);
-        UEstrategiaMovimientoPerseguidor* Perseguidor = NewObject<UEstrategiaMovimientoPerseguidor>(NuevoEnemigo);
+    case ETipoEnemigo::Zangano:
+        return FConstructorEnemigo().ConVida(100.f).ConVelocidad(400.f)
+            .ConEstrategia(UEstrategiaMovimientoLineal::StaticClass())
+            .ConMalla(Malla).ConEscala(0.8f).Construir(Mundo, Ubicacion);
 
-        switch (Tipo)
-        {
-        case ETipoEnemigo::Zangano:
-            NuevoEnemigo->Vida = 100.f;
-            NuevoEnemigo->Velocidad = 400.f;
-            NuevoEnemigo->EstablecerEstrategia(Lineal);
-            NuevoEnemigo->EstablecerMesh(TEXT("/Game/Jugador/bbghast/Ghast.Ghast"));
-            NuevoEnemigo->SetActorScale3D(FVector(0.8f));
-            break;
+    case ETipoEnemigo::Cazador:
+        return FConstructorEnemigo().ConVida(100.f).ConVelocidad(300.f)
+            .ConEstrategia(UEstrategiaMovimientoZigZag::StaticClass())
+            .ConMalla(Malla).ConEscala(0.8f).Construir(Mundo, Ubicacion);
 
-        case ETipoEnemigo::Cazador:
-            NuevoEnemigo->Vida = 100.f;
-            NuevoEnemigo->Velocidad = 300.f;
-            NuevoEnemigo->EstablecerEstrategia(ZigZag);
-            NuevoEnemigo->EstablecerMesh(TEXT("/Game/Jugador/bbghast/Ghast.Ghast"));
-            NuevoEnemigo->SetActorScale3D(FVector(0.8f));
-            break;
+    case ETipoEnemigo::Tanque:
+        return FConstructorEnemigo().ConVida(100.f).ConVelocidad(600.f)
+            .ConEstrategia(UEstrategiaMovimientoLineal::StaticClass())
+            .ConMalla(Malla).ConEscala(0.6f).Construir(Mundo, Ubicacion);
 
-        case ETipoEnemigo::Tanque:
-            NuevoEnemigo->Vida = 100.f;
-            NuevoEnemigo->Velocidad = 600.f;
-            NuevoEnemigo->EstablecerEstrategia(Lineal);
-            NuevoEnemigo->EstablecerMesh(TEXT("/Game/Jugador/bbghast/Ghast.Ghast"));
-            NuevoEnemigo->SetActorScale3D(FVector(0.6f));
-            break;
+    case ETipoEnemigo::Interceptor:
+        return FConstructorEnemigo().ConVida(100.f).ConVelocidad(500.f)
+            .ConEstrategia(UEstrategiaMovimientoPerseguidor::StaticClass())
+            .ConMalla(Malla).ConEscala(0.8f).Construir(Mundo, Ubicacion);
 
-        case ETipoEnemigo::Interceptor:
-            NuevoEnemigo->Vida = 100.f;
-            NuevoEnemigo->Velocidad = 500.f;
-            NuevoEnemigo->EstablecerEstrategia(Perseguidor);
-            NuevoEnemigo->EstablecerMesh(TEXT("/Game/Jugador/bbghast/Ghast.Ghast"));
-            NuevoEnemigo->SetActorScale3D(FVector(0.8f));
-            break;
+    case ETipoEnemigo::Buso:
+        return FConstructorEnemigo().ConVida(100.f).ConVelocidad(400.f)
+            .ConEstrategia(UEstrategiaMovimientoDiagonal::StaticClass())
+            .ConMalla(Malla).ConEscala(0.8f).Construir(Mundo, Ubicacion);
 
-        case ETipoEnemigo::Buso:
-        {
-            UEstrategiaMovimientoDiagonal* Diagonal = NewObject<UEstrategiaMovimientoDiagonal>(NuevoEnemigo);
-            NuevoEnemigo->Vida = 100.f;
-            NuevoEnemigo->Velocidad = 400.f;
-            NuevoEnemigo->EstablecerEstrategia(Diagonal);
-            NuevoEnemigo->EstablecerMesh(TEXT("/Game/Jugador/bbghast/Ghast.Ghast"));
-            NuevoEnemigo->SetActorScale3D(FVector(0.8f));
-        }
-        break;
-
-        case ETipoEnemigo::TanqueNavi:
-        {
-            UEstrategiaMovimientoLineal* LinealTanque = NewObject<UEstrategiaMovimientoLineal>(NuevoEnemigo);
-            NuevoEnemigo->Vida = 120.f;
-            NuevoEnemigo->Velocidad = 300.f;
-            NuevoEnemigo->EstablecerEstrategia(LinealTanque);
-            NuevoEnemigo->EstablecerMesh(TEXT("/Game/Jugador/bbghast/Ghast.Ghast"));
-            NuevoEnemigo->SetActorScale3D(FVector(1.0f));
-        }
-        break;
-        }
+    case ETipoEnemigo::TanqueNavi:
+        return FConstructorEnemigo().ConVida(120.f).ConVelocidad(300.f)
+            .ConEstrategia(UEstrategiaMovimientoLineal::StaticClass())
+            .ConMalla(Malla).ConEscala(1.0f).Construir(Mundo, Ubicacion);
     }
-    return NuevoEnemigo;
+
+    return nullptr;
 }
 
 AJefeBase* UFabricaEnemigos::GenerarJefe(UWorld* Mundo, int32 Nivel, FVector Ubicacion)

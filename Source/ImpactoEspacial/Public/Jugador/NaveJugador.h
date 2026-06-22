@@ -9,6 +9,7 @@
 // Declaraci�n anticipada para el Patr�n Object Pool
 class AProyectilBase;
 class USoundBase;
+class UArma;   // PATRON DECORATOR: arma de la nave (definida en Armas/Arma.h)
 
 // --- PATR�N OBSERVER ---
 // La nave es el SUJETO. Estos delegados son los "eventos" que la nave PUBLICA
@@ -58,6 +59,12 @@ protected:
 
 	// Funci�n para buscar un proyectil disponible en la piscina
 	AProyectilBase* ObtenerProyectilDePiscina();
+
+	// --- PATR�N DECORATOR ---
+	// Arma actual de la nave. Empieza como UArmaBasica y los power-ups la
+	// ENVUELVEN con decoradores (p. ej. disparo triple).
+	UPROPERTY()
+	UArma* ArmaActual;
 
 protected:
 	// La clase del Widget que queremos usar (la seleccionaremos en Unreal)
@@ -117,6 +124,9 @@ public:
 	FTimerHandle ManejadorTemporizadorPoder;
 
 	void SumarPuntos(int32 Cantidad);
+
+	// El arma (Decorator) usa esto para lanzar una bala reciclada de la piscina (Object Pool).
+	void LanzarProyectil(FVector Ubicacion, FRotator Rotacion);
 
 	// --- EVENTOS DEL PATR�N OBSERVER (el HUD se suscribe a estos) ---
 	UPROPERTY()

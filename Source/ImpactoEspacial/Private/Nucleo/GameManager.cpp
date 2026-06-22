@@ -10,11 +10,12 @@
 #include "Kismet/GameplayStatics.h"
 #include "Enemigos/GeneradorEnemigos.h"
 #include "Jugador/NaveJugador.h"
+#include "Nucleo/EstadoJuego.h"
 #include "Engine/Engine.h"
 
 UGameManager::UGameManager()
 {
-    EstadoActual = EEstadoJuego::MenuPrincipal;
+    EstadoObjeto = nullptr;         // STATE: se asigna al crear la instancia
     PuntuacionTotal = 0;
     OleadaActual = 0;
     EnemigosRestantesEnOleada = 0;
@@ -22,31 +23,51 @@ UGameManager::UGameManager()
     MundoActual = nullptr;
 }
 
+// SINGLETON: definicion de la unica instancia (variable estatica de la clase).
+UGameManager* UGameManager::Instancia = nullptr;
+
 UGameManager* UGameManager::ObtenerInstancia(UWorld* Mundo)
 {
-    if (!Mundo) return nullptr;
-
-    // Guardamos el GameManager en el GameInstance (no en un puntero est�tico).
-    // El GameInstance sobrevive entre niveles y est� protegido del recolector de
-    // basura, as� que nunca devolvemos un puntero a memoria liberada (la causa
-    // del crash al volver a jugar tras un cambio de nivel).
-    USpaceImpactGameInstance* GI = Cast<USpaceImpactGameInstance>(Mundo->GetGameInstance());
-    if (!GI) return nullptr;
-
-    // Recreamos si: no existe, fue invalidado, o pertenece a un World anterior
-    // (MundoActual es UPROPERTY, el GC lo pone a null al destruirse el nivel).
-    if (!IsValid(GI->GameManagerActivo) || GI->GameManagerActivo->MundoActual != Mundo)
+    // SINGLETON: si aun no existe, la creamos UNA sola vez.
+    // La creamos en el "paquete transitorio" (no atada a ningun nivel) y la
+    // protegemos del recolector de basura con AddToRoot(), para que viva toda la
+    // partida y NUNCA quede como puntero colgado al cambiar de nivel.
+    if (!Instancia)
     {
-        GI->GameManagerActivo = NewObject<UGameManager>(GI);
-        GI->GameManagerActivo->MundoActual = Mundo;
+        Instancia = NewObject<UGameManager>(GetTransientPackage());
+        Instancia->AddToRoot();
+        Instancia->CambiarEstado(UEstadoMenu::StaticClass()); // estado inicial
     }
-    return GI->GameManagerActivo;
+
+    // El mundo actual cambia en cada nivel: lo actualizamos en cada acceso.
+    if (Mundo)
+    {
+        Instancia->MundoActual = Mundo;
+    }
+    return Instancia;
+}
+
+// STATE: devuelve el tipo del estado actual (delegando en el objeto de estado).
+EEstadoJuego UGameManager::ObtenerEstado() const
+{
+    return EstadoObjeto ? EstadoObjeto->Tipo() : EEstadoJuego::MenuPrincipal;
+}
+
+// STATE: intercambia el estado: crea el objeto del nuevo estado y entra en el.
+void UGameManager::CambiarEstado(TSubclassOf<UEstadoJuego> NuevoEstado)
+{
+    if (!NuevoEstado) return;
+    EstadoObjeto = NewObject<UEstadoJuego>(this, NuevoEstado);
+    if (EstadoObjeto)
+    {
+        EstadoObjeto->Entrar(this);
+    }
 }
 
 // Arranca una partida: deja todo a cero y lanza la primera oleada.
 void UGameManager::IniciarJuego()
 {
-    EstadoActual = EEstadoJuego::Jugando;
+    CambiarEstado(UEstadoJugando::StaticClass());   // STATE
     PuntuacionTotal = 0;
     OleadaActual = 0;
     bJefeDerrotado = false;
@@ -59,27 +80,22 @@ void UGameManager::IniciarJuego()
 
 void UGameManager::PausarJuego()
 {
-    if (EstadoActual == EEstadoJuego::Jugando)
-    {
-        EstadoActual = EEstadoJuego::Pausado;
-        if (GEngine)
-            GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, TEXT("JUEGO PAUSADO"));
-    }
+    // STATE: NO decidimos aqui con un if; delegamos en el estado actual.
+    // Solo EstadoJugando hara algo; el resto ignora la accion.
+    if (EstadoObjeto) EstadoObjeto->Pausar(this);
 }
 
 void UGameManager::ReanudarJuego()
 {
-    if (EstadoActual == EEstadoJuego::Pausado)
-    {
-        EstadoActual = EEstadoJuego::Jugando;
-    }
+    // STATE: el estado actual decide si reanudar (solo lo hace EstadoPausado).
+    if (EstadoObjeto) EstadoObjeto->Reanudar(this);
 }
 
 // Pasa a estado GameOver y muestra el widget de Game Over (una sola vez).
 void UGameManager::GameOver()
 {
-    if (EstadoActual == EEstadoJuego::GameOver) return;
-    EstadoActual = EEstadoJuego::GameOver;
+    if (ObtenerEstado() == EEstadoJuego::GameOver) return;
+    CambiarEstado(UEstadoGameOver::StaticClass());   // STATE
 
     // Buscar el GameMode para obtener las clases de Widgets
     AImpactoEspacialGameModeBase* GM = Cast<AImpactoEspacialGameModeBase>(
@@ -104,7 +120,8 @@ void UGameManager::GameOver()
 
 void UGameManager::VictoriaJuego()
 {
-    // Ya no se usa, la victoria se muestra desde EnemigoBase
+    // STATE: pasa al estado de victoria.
+    CambiarEstado(UEstadoVictoria::StaticClass());
 }
 
 // Suma puntos al marcador global.
@@ -158,7 +175,7 @@ void UGameManager::ResetearJuego()
     OleadaActual = 0;
     EnemigosRestantesEnOleada = 0;
     bJefeDerrotado = false;
-    EstadoActual = EEstadoJuego::MenuPrincipal;
+    CambiarEstado(UEstadoMenu::StaticClass());   // STATE
 }
 
 // Fija directamente el nivel (lo usa la nave al empezar en el nivel 1).
@@ -166,8 +183,8 @@ void UGameManager::EstablecerNivel(int32 NuevoNivel)
 {
     OleadaActual = NuevoNivel;
     bJefeDerrotado = false;
-    EnemigosRestantesEnOleada = 10;  
-    EstadoActual = EEstadoJuego::Jugando;
+    EnemigosRestantesEnOleada = 10;
+    CambiarEstado(UEstadoJugando::StaticClass());   // STATE
     if (GEngine)
         GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan,
             FString::Printf(TEXT("NIVEL %d"), OleadaActual));
